@@ -1,6 +1,6 @@
 # Zoo Puzzle Hub 🐾
 
-A vibrant, educational logic game portal designed for kids, featuring a cute animal theme, engaging sound effects, rich animations, and built-in AI solvers!
+A vibrant, educational logic game portal designed for kids, featuring a cute animal theme, engaging sound effects, rich animations, and built-in auto-solvers!
 
 [Русское описание ниже](#ru)
 
@@ -18,7 +18,7 @@ A vibrant, educational logic game portal designed for kids, featuring a cute ani
 - **Bright & Cheerful Design**: Custom "Candy" color palette, custom typography (Fredoka font), and smooth micro-animations.
 - **Confetti & Particle Effects**: Celebrating every win with colorful animations.
 - **Sound Effects 🔊**: Delightful sound cues for moves, combinations, wins, and losses.
-- **AI Auto-Solver Helper 🤖**: Stuck? Let the built-in AI solve the game for you or show you the next best moves.
+- **Auto-Solver Helper 🤖**: Stuck? Let the built-in solver play the game for you or show you the next best moves.
 - **Responsive Layout**: Works beautifully on mobile, tablet, and desktop screens.
 - **No Complex Setup**: Pure Vanilla HTML, CSS, and JS. No bundlers or heavy dependencies required.
 
@@ -45,7 +45,7 @@ npx serve .
 - **Премиум-дизайн**: Яркая тема "Candy", красивый шрифт Fredoka и плавная анимация.
 - **Праздничные эффекты 🎉**: Анимация конфетти при победе.
 - **Звуки 🔊**: Звуковые эффекты для действий, побед и поражений.
-- **ИИ-Помощник (Авторешение) 🤖**: Встроенный робот-помощник покажет правильные ходы или решит головоломку за вас.
+- **Авторешение 🤖**: Встроенный помощник покажет правильные ходы или решит головоломку за вас.
 
 ## 📄 License
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
