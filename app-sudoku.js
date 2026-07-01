@@ -44,11 +44,13 @@ class AppSudokuClass {
   setBoardSize(size) {
     if (this.boardSize === size) return;
     this.boardSize = size;
-    
+
     // Save to settings immediately
     try {
       localStorage.setItem('zoo_sudoku_board_size', this.boardSize);
-    } catch(e) {}
+    } catch (e) {
+      console.warn('Could not save Sudoku board size:', e);
+    }
 
     if (!this.loadState()) {
       this.startNewGame();
@@ -63,14 +65,11 @@ class AppSudokuClass {
   startNewGame() {
     this.won = false;
     const baseGrid = this.generateGrid();
-    
+
     // Create puzzle: clear random cells based on size
     const totalCells = this.boardSize * this.boardSize;
-    const indices = Array.from({ length: totalCells }, (_, i) => i);
-    for (let i = totalCells - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [indices[i], indices[j]] = [indices[j], indices[i]];
-    }
+    // DUP-04: use shared shuffle utility
+    const indices = shuffle(Array.from({ length: totalCells }, (_, i) => i));
 
     let blankCount = 6; // 4x4 (Easy)
     if (this.boardSize === 6) blankCount = 15; // 6x6 (Medium)
@@ -148,11 +147,8 @@ class AppSudokuClass {
       }
     }
 
-    const digits = [1, 2, 3, 4];
-    for (let i = 3; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [digits[i], digits[j]] = [digits[j], digits[i]];
-    }
+    // DUP-04: use shared shuffle
+    const digits = shuffle([1, 2, 3, 4]);
     for (let r = 0; r < 4; r++) {
       for (let c = 0; c < 4; c++) {
         base[r][c] = digits[base[r][c] - 1];
@@ -230,11 +226,8 @@ class AppSudokuClass {
     }
 
     // 5. Shuffle symbol digits
-    const digits = [1, 2, 3, 4, 5, 6];
-    for (let i = 5; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [digits[i], digits[j]] = [digits[j], digits[i]];
-    }
+    // DUP-04: use shared shuffle
+    const digits = shuffle([1, 2, 3, 4, 5, 6]);
     for (let r = 0; r < 6; r++) {
       for (let c = 0; c < 6; c++) {
         base[r][c] = digits[base[r][c] - 1];
@@ -327,11 +320,8 @@ class AppSudokuClass {
     }
 
     // 5. Shuffle symbol digits
-    const digits = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-    for (let i = 8; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [digits[i], digits[j]] = [digits[j], digits[i]];
-    }
+    // DUP-04: use shared shuffle
+    const digits = shuffle([1, 2, 3, 4, 5, 6, 7, 8, 9]);
     for (let r = 0; r < 9; r++) {
       for (let c = 0; c < 9; c++) {
         base[r][c] = digits[base[r][c] - 1];
@@ -505,14 +495,17 @@ class AppSudokuClass {
     board.className = `board grid-${this.boardSize}x${this.boardSize}`;
     board.style.setProperty('--grid-size', this.boardSize);
 
-    const mode = window.portal ? window.portal.gameMode : 'animals';
+    // DUP-05: use shared getGameMode utility
+    const mode = getGameMode();
 
     for (let r = 0; r < this.boardSize; r++) {
       for (let c = 0; c < this.boardSize; c++) {
         const val = this.grid[r][c];
         const cell = document.createElement('div');
         cell.className = 'grid-cell sudoku-cell';
-        
+        cell.dataset.row = r;
+        cell.dataset.col = c;
+
         // Alternating subgrid blocks background coloring
         let isAlt = false;
         if (this.boardSize === 4) {
@@ -561,35 +554,13 @@ class AppSudokuClass {
           }
           if (!blockFilled) break;
         }
-
         if (blockFilled) {
           cell.classList.add('sudoku-block-filled');
         }
 
-        // Render value contents
+        // Render value contents — DUP-01: use shared createTileInner
         if (val !== null) {
-          const inner = document.createElement('div');
-          inner.className = 'tile-inner';
-          
-          if (mode === 'animals') {
-            const data = SUDOKU_TILES[val];
-            const icon = document.createElement('span');
-            icon.className = 'tile-icon';
-            icon.textContent = data.emoji;
-            
-            const label = document.createElement('span');
-            label.className = 'tile-label';
-            label.textContent = data.name;
-            
-            inner.appendChild(icon);
-            inner.appendChild(label);
-          } else {
-            const num = document.createElement('span');
-            num.className = 'tile-number';
-            num.textContent = val;
-            inner.appendChild(num);
-          }
-          cell.appendChild(inner);
+          cell.appendChild(createTileInner(val, SUDOKU_TILES, mode));
         }
 
         // Selection listener
@@ -633,66 +604,33 @@ class AppSudokuClass {
   renderKeypad() {
     const keypad = document.getElementById('sudoku-keypad');
     keypad.innerHTML = '';
-    const mode = window.portal ? window.portal.gameMode : 'animals';
+    // DUP-05: use shared getGameMode
+    const mode = getGameMode();
 
-    // Keypad numbers 1 to Size
-    for (let val = 1; val <= this.boardSize; val++) {
-      const btn = document.createElement('button');
-      btn.className = 'btn-keypad';
-      
-      if (mode === 'animals') {
-        const data = SUDOKU_TILES[val];
-        const emojiSpan = document.createElement('span');
-        emojiSpan.className = 'keypad-emoji';
-        emojiSpan.textContent = data.emoji;
-        
-        const labelSpan = document.createElement('span');
-        labelSpan.className = 'keypad-label';
-        labelSpan.textContent = data.name;
-        
-        btn.appendChild(emojiSpan);
-        btn.appendChild(labelSpan);
-      } else {
-        btn.textContent = val;
-      }
+    // DUP-02: use shared renderKeypadButtons utility
+    const values = Array.from({ length: this.boardSize }, (_, i) => i + 1);
+    renderKeypadButtons(keypad, SUDOKU_TILES, values, mode, (val) => {
+      if (window.GameAudio) window.GameAudio.playClick();
+      this.setCellValue(val);
+    });
 
-      btn.addEventListener('click', () => {
-        if (window.GameAudio) window.GameAudio.playClick();
-        this.setCellValue(val);
-      });
-
-      keypad.appendChild(btn);
-    }
-
-    // Erase key
-    const eraseBtn = document.createElement('button');
-    eraseBtn.className = 'btn-keypad erase';
-    eraseBtn.title = 'Стереть значение';
-    
-    const emojiSpan = document.createElement('span');
-    emojiSpan.className = 'keypad-emoji';
-    emojiSpan.textContent = '❌';
-    
-    const labelSpan = document.createElement('span');
-    labelSpan.className = 'keypad-label';
-    labelSpan.textContent = 'Стереть';
-    
-    eraseBtn.appendChild(emojiSpan);
-    eraseBtn.appendChild(labelSpan);
-
-    eraseBtn.addEventListener('click', () => {
+    // Erase key — DUP-02: use shared appendEraseButton
+    appendEraseButton(keypad, () => {
       if (window.GameAudio) window.GameAudio.playClick();
       this.setCellValue(null);
     });
-
-    keypad.appendChild(eraseBtn);
   }
 
   selectCell(row, col) {
     if (this.staticCells[row][col]) return; // Static clues are locked
     this.selectedCell = { row, col };
-    this.renderBoard();
-  }
+    // BUG-03: targeted DOM update — don't rebuild the entire board for a selection change
+    document.querySelectorAll('#sudoku-board .sudoku-cell').forEach(el => {
+      const r = parseInt(el.dataset.row);
+      const c = parseInt(el.dataset.col);
+      el.classList.toggle('selected', r === row && c === col);
+    });
+  },
 
   selectFirstEmptyCell() {
     for (let r = 0; r < this.boardSize; r++) {
@@ -784,22 +722,15 @@ class AppSudokuClass {
   }
 
   loadWins() {
-    try {
-      const savedWins = localStorage.getItem('zoo_sudoku_wins');
-      if (savedWins) {
-        this.wins = JSON.parse(savedWins);
-      } else {
-        this.wins = { 4: 0, 6: 0, 9: 0 };
-      }
-    } catch(e) {
-      this.wins = { 4: 0, 6: 0, 9: 0 };
-    }
+    // DUP-03: use shared createWinsStorage
+    const storage = createWinsStorage('zoo_sudoku_wins', { 4: 0, 6: 0, 9: 0 });
+    this.wins = storage.load();
   }
 
   saveWins() {
-    try {
-      localStorage.setItem('zoo_sudoku_wins', JSON.stringify(this.wins));
-    } catch(e) {}
+    // DUP-03: use shared createWinsStorage
+    const storage = createWinsStorage('zoo_sudoku_wins', { 4: 0, 6: 0, 9: 0 });
+    storage.save(this.wins);
   }
 
   updateWinsUI() {

@@ -296,7 +296,8 @@ class AppCrosswordClass {
     board.className = `board grid-${this.boardSize}x${this.boardSize}`;
     board.style.setProperty('--grid-size', this.boardSize);
 
-    const mode = window.portal ? window.portal.gameMode : 'animals';
+    // DUP-05: use shared getGameMode
+    const mode = getGameMode();
     const cellTypes = this.boardSize === 5 ? CELL_TYPES_5 : CELL_TYPES_7;
 
     for (let r = 0; r < this.boardSize; r++) {
@@ -372,65 +373,21 @@ class AppCrosswordClass {
   renderKeypad() {
     const keypad = document.getElementById('crossword-keypad');
     if (!keypad) return;
-    keypad.innerHTML = '';
-    const mode = window.portal ? window.portal.gameMode : 'animals';
+    // DUP-05: use shared getGameMode
+    const mode = getGameMode();
 
+    // DUP-02: use shared renderKeypadButtons
     const nums = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0];
+    renderKeypadButtons(keypad, CROSSWORD_TILES, nums, mode, (val) => {
+      if (window.GameAudio) window.GameAudio.playClick();
+      this.setCellValue(val);
+    }, '', null);
 
-    nums.forEach(val => {
-      const btn = document.createElement('button');
-      btn.className = 'btn-keypad';
-      btn.style.flex = '1 1 18%';
-      btn.style.minWidth = '40px';
-      
-      if (mode === 'animals') {
-        const data = CROSSWORD_TILES[val];
-        const emojiSpan = document.createElement('span');
-        emojiSpan.className = 'keypad-emoji';
-        emojiSpan.textContent = data.emoji;
-        
-        const labelSpan = document.createElement('span');
-        labelSpan.className = 'keypad-label';
-        labelSpan.textContent = data.name;
-        
-        btn.appendChild(emojiSpan);
-        btn.appendChild(labelSpan);
-      } else {
-        btn.textContent = val;
-      }
-
-      btn.addEventListener('click', () => {
-        if (window.GameAudio) window.GameAudio.playClick();
-        this.setCellValue(val);
-      });
-
-      keypad.appendChild(btn);
-    });
-
-    const eraseBtn = document.createElement('button');
-    eraseBtn.className = 'btn-keypad erase';
-    eraseBtn.title = 'Стереть значение';
-    eraseBtn.style.flex = '1 1 100%';
-    eraseBtn.style.marginTop = '6px';
-    eraseBtn.style.minHeight = '42px';
-    
-    const emojiSpan = document.createElement('span');
-    emojiSpan.className = 'keypad-emoji';
-    emojiSpan.textContent = '❌';
-    
-    const labelSpan = document.createElement('span');
-    labelSpan.className = 'keypad-label';
-    labelSpan.textContent = 'Стереть';
-    
-    eraseBtn.appendChild(emojiSpan);
-    eraseBtn.appendChild(labelSpan);
-
-    eraseBtn.addEventListener('click', () => {
+    // DUP-02: use shared appendEraseButton
+    appendEraseButton(keypad, () => {
       if (window.GameAudio) window.GameAudio.playClick();
       this.setCellValue(null);
-    });
-
-    keypad.appendChild(eraseBtn);
+    }, { flex: '1 1 100%', marginTop: '6px', minHeight: '42px' });
   }
 
   selectCell(row, col) {
@@ -542,22 +499,15 @@ class AppCrosswordClass {
   }
 
   loadWins() {
-    try {
-      const savedWins = localStorage.getItem('zoo_crossword_wins');
-      if (savedWins) {
-        this.wins = JSON.parse(savedWins);
-      } else {
-        this.wins = { 5: 0, 7: 0 };
-      }
-    } catch(e) {
-      this.wins = { 5: 0, 7: 0 };
-    }
+    // DUP-03: use shared createWinsStorage
+    const storage = createWinsStorage('zoo_crossword_wins', { 5: 0, 7: 0 });
+    this.wins = storage.load();
   }
 
   saveWins() {
-    try {
-      localStorage.setItem('zoo_crossword_wins', JSON.stringify(this.wins));
-    } catch(e) {}
+    // DUP-03: use shared createWinsStorage
+    const storage = createWinsStorage('zoo_crossword_wins', { 5: 0, 7: 0 });
+    storage.save(this.wins);
   }
 
   updateWinsUI() {

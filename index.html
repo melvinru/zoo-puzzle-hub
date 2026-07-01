@@ -55,7 +55,7 @@
 
         <!-- Sudoku Score Board (Sudoku only) -->
         <div class="scores-container hidden" id="sudoku-scores">
-          <div class="score-box" style="min-width: 90px;">
+          <div class="score-box score-box-wide">
             <span class="score-label" id="sudoku-wins-label">ПОБЕД 4x4</span>
             <span class="score-value" id="sudoku-wins-value">0</span>
           </div>
@@ -63,7 +63,7 @@
 
         <!-- Bulls and Cows Score Board -->
         <div class="scores-container hidden" id="bulls-scores">
-          <div class="score-box" style="min-width: 100px;">
+          <div class="score-box score-box-wide">
             <span class="score-label" id="bulls-wins-label">ПОБЕД 4 симв.</span>
             <span class="score-value" id="bulls-wins-value">0</span>
           </div>
@@ -71,7 +71,7 @@
 
         <!-- Crossword Score Board -->
         <div class="scores-container hidden" id="crossword-scores">
-          <div class="score-box" style="min-width: 90px;">
+          <div class="score-box score-box-wide">
             <span class="score-label" id="crossword-wins-label">ПОБЕД 5x5</span>
             <span class="score-value" id="crossword-wins-value">0</span>
           </div>
@@ -79,7 +79,7 @@
 
         <!-- Pyramid Score Board -->
         <div class="scores-container hidden" id="pyramid-scores">
-          <div class="score-box" style="min-width: 100px;">
+          <div class="score-box score-box-wide">
             <span class="score-label" id="pyramid-wins-label">ПОБЕД 3 ряда</span>
             <span class="score-value" id="pyramid-wins-value">0</span>
           </div>
@@ -319,9 +319,9 @@
           </div>
 
           <!-- Action buttons -->
-          <div class="fifteen-playback-controls" style="margin-top: 10px;">
-            <button class="btn btn-pill active" id="sudoku-hint-btn" style="padding: 12px 20px; font-size: 0.95rem; width: 100%; border-radius: 20px;" title="Открыть случайную клетку">💡 Подсказка</button>
-            <button class="btn btn-pill btn-danger" id="sudoku-reset-btn" style="padding: 12px 20px; font-size: 0.95rem; width: 100%; border-radius: 20px;" title="Очистить ваши ответы">🧹 Очистить</button>
+          <div class="fifteen-playback-controls action-btns-col" style="margin-top: 10px;">
+            <button class="btn btn-pill active btn-action-full" id="sudoku-hint-btn" title="Открыть случайную клетку">💡 Подсказка</button>
+            <button class="btn btn-pill btn-danger btn-action-full" id="sudoku-reset-btn" title="Очистить ваши ответы">🧹 Очистить</button>
           </div>
         </section>
       </div>
@@ -341,15 +341,15 @@
           </div>
         </main>
 
-        <!-- Control Side Panel -->
-        <section class="game-side-panel">
-          <div class="panel-header" style="display: flex; align-items: center; justify-content: space-between; width: 100%;">
-            <h3 style="flex: 1;">🐮 Быки и Коровы</h3>
-            <button id="bulls-info-btn" class="btn btn-circle" style="width: 30px; height: 30px; font-size: 0.85rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; padding: 0;" title="Правила игры" aria-label="Правила игры">ℹ️</button>
-          </div>
+          <!-- Control Side Panel -->
+          <section class="game-side-panel">
+            <div class="panel-header panel-header-flex">
+              <h3 style="flex: 1;">🐮 Быки и Коровы</h3>
+              <button id="bulls-info-btn" class="btn btn-circle btn-circle-sm" title="Правила игры" aria-label="Правила игры">ℹ️</button>
+            </div>
 
-          <!-- Inline Rules Drawer -->
-          <div id="bulls-rules-drawer" class="hidden" style="background: var(--card-bg); border: 1.5px solid var(--header-border); border-radius: 18px; padding: 12px; margin-bottom: 4px; font-size: 0.8rem; line-height: 1.45; box-shadow: var(--card-shadow); text-align: left;">
+            <!-- Inline Rules Drawer -->
+            <div id="bulls-rules-drawer" class="hidden bulls-rules-drawer">
             <h4 style="margin-bottom: 6px; font-weight: 700; color: var(--text-main); font-size: 0.85rem;">Как играть? 🕵️‍♂️</h4>
             <ul style="padding-left: 18px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 3px; color: var(--text-main);">
               <li><strong>Бык 🐂</strong> — символ угадан на своём месте!</li>
@@ -364,13 +364,13 @@
             Попробуйте разгадать шифр! 🕵️‍♂️
           </div>
 
-          <!-- Current guess display slots -->
-          <div class="bulls-slots-card" style="background: var(--header-bg); border: 1.5px solid var(--header-border); border-radius: 20px; padding: 14px; margin-bottom: 12px; box-shadow: var(--card-shadow); text-align: center;">
-            <span class="sudoku-keypad-label" style="display: block; margin-bottom: 8px;">ВАШ ВАРИАНТ:</span>
-            <div id="bulls-guess-slots" style="display: flex; justify-content: center; gap: 10px; margin: 10px 0;">
-              <!-- Dynamic slot circles -->
+            <!-- Current guess display slots -->
+            <div class="bulls-slots-card" id="bulls-guess-slots-wrap">
+              <span class="sudoku-keypad-label" style="display: block; margin-bottom: 8px;">ВАШ ВАРИАНТ:</span>
+              <div id="bulls-guess-slots" style="display: flex; justify-content: center; gap: 10px; margin: 10px 0;">
+                <!-- Dynamic slot circles -->
+              </div>
             </div>
-          </div>
 
           <!-- Keypad Selector -->
           <div class="sudoku-keypad-card">
@@ -381,9 +381,9 @@
           </div>
 
           <!-- Action buttons -->
-          <div class="fifteen-playback-controls" style="margin-top: 10px; display: flex; gap: 10px; width: 100%;">
-            <button class="btn btn-pill active" id="bulls-submit-btn" style="padding: 12px 20px; font-size: 0.95rem; flex: 2; border-radius: 20px;" title="Проверить шифр">🔍 Попробовать</button>
-            <button class="btn btn-pill btn-danger" id="bulls-backspace-btn" style="padding: 12px 20px; font-size: 0.95rem; flex: 1; border-radius: 20px;" title="Стереть последнюю цифру">◀️ Стереть</button>
+          <div class="action-btns-row" style="margin-top: 10px;">
+            <button class="btn btn-pill active btn-action-grow" id="bulls-submit-btn" title="Проверить шифр">🔍 Попробовать</button>
+            <button class="btn btn-pill btn-danger btn-action-grow" id="bulls-backspace-btn" title="Стереть последнюю цифру">◀️ Стереть</button>
           </div>
         </section>
       </div>
@@ -433,9 +433,9 @@
           </div>
 
           <!-- Action buttons -->
-          <div class="fifteen-playback-controls" style="margin-top: 10px;">
-            <button class="btn btn-pill active" id="crossword-hint-btn" style="padding: 12px 20px; font-size: 0.95rem; width: 100%; border-radius: 20px;" title="Открыть случайную клетку">💡 Подсказка</button>
-            <button class="btn btn-pill btn-danger" id="crossword-reset-btn" style="padding: 12px 20px; font-size: 0.95rem; width: 100%; border-radius: 20px;" title="Очистить ваши ответы">🧹 Очистить</button>
+          <div class="fifteen-playback-controls action-btns-col" style="margin-top: 10px;">
+            <button class="btn btn-pill active btn-action-full" id="crossword-hint-btn" title="Открыть случайную клетку">💡 Подсказка</button>
+            <button class="btn btn-pill btn-danger btn-action-full" id="crossword-reset-btn" title="Очистить ваши ответы">🧹 Очистить</button>
           </div>
         </section>
       </div>
@@ -485,9 +485,9 @@
           </div>
 
           <!-- Action buttons -->
-          <div class="fifteen-playback-controls" style="margin-top: 10px;">
-            <button class="btn btn-pill active" id="pyramid-hint-btn" style="padding: 12px 20px; font-size: 0.95rem; width: 100%; border-radius: 20px;" title="Открыть случайную ячейку">💡 Подсказка</button>
-            <button class="btn btn-pill btn-danger" id="pyramid-reset-btn" style="padding: 12px 20px; font-size: 0.95rem; width: 100%; border-radius: 20px;" title="Очистить ваши ответы">🧹 Очистить</button>
+          <div class="fifteen-playback-controls action-btns-col" style="margin-top: 10px;">
+            <button class="btn btn-pill active btn-action-full" id="pyramid-hint-btn" title="Открыть случайную ячейку">💡 Подсказка</button>
+            <button class="btn btn-pill btn-danger btn-action-full" id="pyramid-reset-btn" title="Очистить ваши ответы">🧹 Очистить</button>
           </div>
         </section>
       </div>
@@ -560,6 +560,7 @@
   </div>
 
   <!-- Scripts -->
+  <script src="utils.js"></script>
   <script src="audio.js"></script>
   <script src="confetti.js"></script>
   <script src="solver.js"></script>

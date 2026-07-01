@@ -152,8 +152,7 @@ const App = {
   },
 
   startOrRestoreGame() {
-    const board = document.getElementById('game-board');
-    board.innerHTML = '';
+    // setupBackgroundGrid() already clears innerHTML internally (BUG-01 fix)
     this.setupBackgroundGrid();
     
     let restored = false;
@@ -238,11 +237,13 @@ const App = {
 
   setupBackgroundGrid() {
     const board = document.getElementById('game-board');
-    board.className = `board ${this.boardSize === 3 ? 'grid-3x3' : 'grid-4x4'}`;
-    
+    // BUG-01: clear first to prevent duplicate cells on repeated calls
+    board.innerHTML = '';
+    board.className = `board grid-${this.boardSize}x${this.boardSize}`;
+
     // Set custom CSS variables on board
     board.style.setProperty('--grid-size', this.boardSize);
-    
+
     // Inject background cell divs
     const cellCount = this.boardSize * this.boardSize;
     for (let i = 0; i < cellCount; i++) {
@@ -282,79 +283,37 @@ const App = {
     if (tile.isNew) {
       div.classList.add('tile-new');
     }
-    
+
     div.style.setProperty('--row', tile.row);
     div.style.setProperty('--col', tile.col);
-    
-    const inner = document.createElement('div');
-    inner.className = 'tile-inner';
-    
-    if (this.gameMode === 'animals') {
-      const data = ANIMAL_TILES[tile.value] || { emoji: '👾', name: 'Чудик' };
-      
-      const icon = document.createElement('span');
-      icon.className = 'tile-icon';
-      icon.textContent = data.emoji;
-      
-      const label = document.createElement('span');
-      label.className = 'tile-label';
-      label.textContent = data.name;
-      
-      inner.appendChild(icon);
-      inner.appendChild(label);
-    } else {
-      const number = document.createElement('span');
-      number.className = 'tile-number';
-      number.textContent = tile.value;
-      if (tile.value >= 1000) {
-        number.classList.add('small-font');
-      }
-      inner.appendChild(number);
-    }
-    
-    div.appendChild(inner);
+
+    // DUP-01: use shared createTileInner utility
+    div.appendChild(createTileInner(tile.value, ANIMAL_TILES, this.gameMode));
     board.appendChild(div);
     tile.domElement = div;
   },
 
   updateTileDOM(tile) {
     if (!tile.domElement) return;
-    
+
     // Update coordinates variables (triggers CSS slide transition)
     tile.domElement.style.setProperty('--row', tile.row);
     tile.domElement.style.setProperty('--col', tile.col);
-    
-    // If tile value changed (merged)
+
+    // If tile value changed (merged) — update visual content
     if (tile.isMerged) {
       tile.domElement.className = `tile tile-v-${tile.value} tile-merge`;
       if (this.gameMode === 'numbers') {
         tile.domElement.classList.add('number-mode');
       }
-      
-      // Update contents
-      const inner = tile.domElement.querySelector('.tile-inner');
-      inner.innerHTML = '';
-      
-      if (this.gameMode === 'animals') {
-        const data = ANIMAL_TILES[tile.value] || { emoji: '👾', name: 'Чудик' };
-        const icon = document.createElement('span');
-        icon.className = 'tile-icon';
-        icon.textContent = data.emoji;
-        
-        const label = document.createElement('span');
-        label.className = 'tile-label';
-        label.textContent = data.name;
-        
-        inner.appendChild(icon);
-        inner.appendChild(label);
+
+      // DUP-01: replace old inner with fresh one via shared utility
+      const oldInner = tile.domElement.querySelector('.tile-inner');
+      const newInner = createTileInner(tile.value, ANIMAL_TILES, this.gameMode);
+      if (oldInner) {
+        tile.domElement.replaceChild(newInner, oldInner);
       } else {
-        const number = document.createElement('span');
-        number.className = 'tile-number';
-        number.textContent = tile.value;
-        if (tile.value >= 1000) {
-          number.classList.add('small-font');
-        }
-        inner.appendChild(number);
+        tile.domElement.appendChild(newInner);
       }
     }
   },
@@ -552,14 +511,8 @@ const App = {
   checkGameStatus() {
     // 1. Check Win Condition: 2048 (Unicorn) reached
     if (!this.won && !this.keepPlayingAfterWin) {
-      let reached2048 = false;
-      this.grid.forEach(row => {
-        row.forEach(tile => {
-          if (tile && tile.value === 2048) {
-            reached2048 = true;
-          }
-        });
-      });
+      // OPT-03: flat().some() — short-circuits on first match
+      const reached2048 = this.grid.flat().some(tile => tile?.value === 2048);
 
       if (reached2048) {
         this.won = true;
@@ -791,15 +744,12 @@ const App = {
     this.renderEvolutionGuide();
     
     // Redraw existing tiles in new mode
-    const board = document.getElementById('game-board');
-    board.innerHTML = '';
+    // setupBackgroundGrid() clears board and re-adds background cells (BUG-01 fix)
     this.setupBackgroundGrid();
-    
+
     this.grid.forEach(row => {
       row.forEach(tile => {
-        if (tile) {
-          this.createTileDOM(tile);
-        }
+        if (tile) this.createTileDOM(tile);
       });
     });
 

@@ -34,6 +34,21 @@ class AppBullsClass {
     }
   }
 
+  // BUG-02: keydown handler stored as class method so it can be properly removed
+  _handleKeyDown(e) {
+    if (window.portal && window.portal.activeGame !== 'bulls') return;
+    if (this.won) return;
+
+    if (e.key >= '1' && e.key <= '9') {
+      this.addSymbolToGuess(parseInt(e.key));
+    } else if (e.key === 'Backspace' || e.key === 'Delete') {
+      this.removeLastSymbol();
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      this.submitGuess();
+    }
+  }
+
   setCodeSize(size) {
     if (this.codeSize === size) return;
     if (window.GameAudio) window.GameAudio.playClick();
@@ -66,12 +81,8 @@ class AppBullsClass {
 
   generateSecretCode() {
     const pool = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-    // Shuffle pool using Fisher-Yates
-    for (let i = pool.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [pool[i], pool[j]] = [pool[j], pool[i]];
-    }
-    return pool.slice(0, this.codeSize);
+    // DUP-04: use shared shuffle utility
+    return shuffle(pool).slice(0, this.codeSize);
   }
 
   addSymbolToGuess(val) {
@@ -158,65 +169,20 @@ class AppBullsClass {
         if (window.GameAudio) window.GameAudio.playWin();
         if (window.Confetti) window.Confetti.celebrate(4500);
 
-        const winTitle = document.getElementById('win-title');
-        const winModal = document.getElementById('game-win-modal');
-        const modalText = winModal.querySelector('p');
+        // DUP (ARCH-04): use shared showWinModalWith to avoid mutating 2048 modal DOM directly
+        const mode = getGameMode();
+        const attemptsText = `<strong>${this.guessHistory.length}</strong>`;
+        const bodyText = mode === 'animals'
+          ? `Потрясающий спецагент! Ты отгадал всех секретных зверят за ${attemptsText} попыток!`
+          : `Потрясающий спецагент! Ты отгадал все секретные цифры за ${attemptsText} попыток!`;
 
-        const originalTitle = winTitle.innerHTML;
-        const originalText = modalText.innerHTML;
-
-        winTitle.innerHTML = 'Ты разгадал шифр! 🎉🕵️‍♂️';
-        const mode = window.portal ? window.portal.gameMode : 'animals';
-        if (mode === 'animals') {
-          modalText.innerHTML = `Потрясающий спецагент! Ты отгадал всех секретных зверят за <strong>${this.guessHistory.length}</strong> попыток!`;
-        } else {
-          modalText.innerHTML = `Потрясающий спецагент! Ты отгадал все секретные цифры за <strong>${this.guessHistory.length}</strong> попыток!`;
-        }
-
-        const continueBtn = winModal.querySelector('.btn-primary');
-        const restartBtn = winModal.querySelector('.btn-pill.active');
-        const originalRestartAction = restartBtn ? restartBtn.getAttribute('onclick') : null;
-
-        if (restartBtn) {
-          restartBtn.removeAttribute('onclick');
-          restartBtn.onclick = () => {
-            if (window.GameAudio) window.GameAudio.playClick();
-            winModal.classList.add('hidden');
-            winTitle.innerHTML = originalTitle;
-            modalText.innerHTML = originalText;
-            if (continueBtn) {
-              continueBtn.textContent = 'Продолжить! 💖';
-              continueBtn.onclick = null;
-              continueBtn.setAttribute('onclick', "app.closeWinModal(false)");
-            }
-            
-            restartBtn.onclick = null;
-            restartBtn.setAttribute('onclick', originalRestartAction);
-            
-            this.startNewGame();
-          };
-        }
-
-        if (continueBtn) {
-          continueBtn.classList.remove('hidden');
-          continueBtn.textContent = 'Посмотреть попытки 👀';
-          continueBtn.onclick = () => {
-            if (window.GameAudio) window.GameAudio.playClick();
-            winModal.classList.add('hidden');
-            winTitle.innerHTML = originalTitle;
-            modalText.innerHTML = originalText;
-            continueBtn.textContent = 'Продолжить! 💖';
-            
-            continueBtn.onclick = null;
-            continueBtn.setAttribute('onclick', "app.closeWinModal(false)");
-            if (restartBtn) {
-              restartBtn.onclick = null;
-              restartBtn.setAttribute('onclick', originalRestartAction);
-            }
-          };
-        }
-
-        winModal.classList.remove('hidden');
+        showWinModalWith({
+          title: 'Ты разгадал шифр! 🎉🕵️‍♂️',
+          text: bodyText,
+          continueText: 'Посмотреть попытки 👀',
+          onContinue: null,
+          onRestart: () => this.startNewGame()
+        });
       }, 350);
     }
   }
@@ -279,22 +245,15 @@ class AppBullsClass {
   }
 
   loadWins() {
-    try {
-      const savedWins = localStorage.getItem('zoo_bulls_wins');
-      if (savedWins) {
-        this.wins = JSON.parse(savedWins);
-      } else {
-        this.wins = { 3: 0, 4: 0, 5: 0 };
-      }
-    } catch(e) {
-      this.wins = { 3: 0, 4: 0, 5: 0 };
-    }
+    // DUP-03: use shared createWinsStorage
+    const storage = createWinsStorage('zoo_bulls_wins', { 3: 0, 4: 0, 5: 0 });
+    this.wins = storage.load();
   }
 
   saveWins() {
-    try {
-      localStorage.setItem('zoo_bulls_wins', JSON.stringify(this.wins));
-    } catch(e) {}
+    // DUP-03: use shared createWinsStorage
+    const storage = createWinsStorage('zoo_bulls_wins', { 3: 0, 4: 0, 5: 0 });
+    storage.save(this.wins);
   }
 
   updateWinsUI() {
@@ -313,7 +272,8 @@ class AppBullsClass {
     if (!container) return;
     container.innerHTML = '';
 
-    const mode = window.portal ? window.portal.gameMode : 'animals';
+    // DUP-05: use shared getGameMode
+    const mode = getGameMode();
 
     for (let i = 0; i < this.codeSize; i++) {
       const slot = document.createElement('div');
@@ -322,32 +282,11 @@ class AppBullsClass {
       const val = this.currentGuess[i];
       if (val !== undefined) {
         slot.classList.add('filled');
-        const inner = document.createElement('div');
-        inner.className = 'tile-inner';
-
-        if (mode === 'animals') {
-          const data = BULLS_TILES[val];
-          const icon = document.createElement('span');
-          icon.className = 'tile-icon';
-          icon.textContent = data.emoji;
-
-          const label = document.createElement('span');
-          label.className = 'tile-label';
-          label.textContent = data.name;
-
-          inner.appendChild(icon);
-          inner.appendChild(label);
-        } else {
-          const num = document.createElement('span');
-          num.className = 'tile-number';
-          num.textContent = val;
-          inner.appendChild(num);
-        }
-        slot.appendChild(inner);
+        // DUP-01: use shared createTileInner
+        slot.appendChild(createTileInner(val, BULLS_TILES, mode));
 
         // Click to remove this item
         slot.addEventListener('click', () => {
-          // Remove this specific symbol
           this.currentGuess.splice(i, 1);
           if (window.GameAudio) window.GameAudio.playClick();
           this.saveState();
@@ -434,42 +373,15 @@ class AppBullsClass {
   renderKeypad() {
     const keypad = document.getElementById('bulls-keypad');
     if (!keypad) return;
-    keypad.innerHTML = '';
 
-    const mode = window.portal ? window.portal.gameMode : 'animals';
+    // DUP-05: use shared getGameMode
+    const mode = getGameMode();
+    const values = [1, 2, 3, 4, 5, 6, 7, 8, 9];
 
-    for (let val = 1; val <= 9; val++) {
-      const btn = document.createElement('button');
-      btn.className = 'btn-keypad';
-      
-      // If already in current guess, disable it (unique values only)
-      if (this.currentGuess.includes(val)) {
-        btn.disabled = true;
-        btn.classList.add('disabled');
-      }
-
-      if (mode === 'animals') {
-        const data = BULLS_TILES[val];
-        const emojiSpan = document.createElement('span');
-        emojiSpan.className = 'keypad-emoji';
-        emojiSpan.textContent = data.emoji;
-        
-        const labelSpan = document.createElement('span');
-        labelSpan.className = 'keypad-label';
-        labelSpan.textContent = data.name;
-        
-        btn.appendChild(emojiSpan);
-        btn.appendChild(labelSpan);
-      } else {
-        btn.textContent = val;
-      }
-
-      btn.addEventListener('click', () => {
-        this.addSymbolToGuess(val);
-      });
-
-      keypad.appendChild(btn);
-    }
+    // DUP-02: use shared renderKeypadButtons with disabled state
+    renderKeypadButtons(keypad, BULLS_TILES, values, mode, (val) => {
+      this.addSymbolToGuess(val);
+    }, '', (val) => this.currentGuess.includes(val));
   }
 
   updateUI() {
@@ -548,7 +460,6 @@ class AppBullsClass {
 
     const submitBtn = document.getElementById('bulls-submit-btn');
     if (submitBtn) {
-      // Avoid duplicated bindings
       const newSubmit = submitBtn.cloneNode(true);
       submitBtn.parentNode.replaceChild(newSubmit, submitBtn);
       newSubmit.addEventListener('click', () => this.submitGuess());
@@ -561,24 +472,11 @@ class AppBullsClass {
       newBackspace.addEventListener('click', () => this.removeLastSymbol());
     }
 
-    // Keyboard bindings 1-9 or Backspace/Delete to erase, Enter to submit
-    const handleKeyDown = (e) => {
-      if (window.portal && window.portal.activeGame !== 'bulls') return;
-      if (this.won) return;
-
-      if (e.key >= '1' && e.key <= '9') {
-        this.addSymbolToGuess(parseInt(e.key));
-      } else if (e.key === 'Backspace' || e.key === 'Delete') {
-        this.removeLastSymbol();
-      } else if (e.key === 'Enter') {
-        e.preventDefault();
-        this.submitGuess();
-      }
-    };
-
-    window.removeEventListener('keydown', window._bullsKeydownHandler);
-    window._bullsKeydownHandler = handleKeyDown;
-    window.addEventListener('keydown', handleKeyDown);
+    // BUG-02: bind _handleKeyDown as a class method so removeEventListener works correctly
+    // Wrap with arrow to preserve 'this' context
+    this._boundKeyDown = (e) => this._handleKeyDown(e);
+    window.removeEventListener('keydown', this._boundKeyDown);
+    window.addEventListener('keydown', this._boundKeyDown);
   }
 }
 

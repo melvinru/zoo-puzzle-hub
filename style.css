@@ -375,6 +375,11 @@ body {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.03);
 }
 
+/* ARCH-03: replaces inline min-width style on score boxes */
+.score-box-wide {
+  min-width: 95px;
+}
+
 .score-label {
   display: block;
   font-size: 0.65rem;
@@ -466,12 +471,79 @@ body {
   font-size: 1.1rem;
 }
 
-.btn-circle:hover {
-  transform: scale(1.08);
+/* ARCH-03: smaller circular icon button (info button in Bulls panel) */
+.btn-circle-sm {
+  width: 30px;
+  height: 30px;
+  font-size: 0.85rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
 }
 
-.btn-circle:active {
-  transform: scale(0.95);
+/* ARCH-03: panel header with flex layout */
+.panel-header-flex {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+
+/* ARCH-03: bulls rules drawer styling */
+.bulls-rules-drawer {
+  background: var(--card-bg);
+  border: 1.5px solid var(--header-border);
+  border-radius: 18px;
+  padding: 12px;
+  margin-bottom: 4px;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  box-shadow: var(--card-shadow);
+  text-align: left;
+}
+
+/* ARCH-03: action button row (flex, horizontal, two buttons side-by-side) */
+.action-btns-row {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  margin-top: 10px;
+}
+
+/* ARCH-03: action buttons column (vertical stack, full-width) */
+.action-btns-col {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+/* ARCH-03: button fills full column width */
+.btn-action-full {
+  padding: 12px 20px;
+  font-size: 0.95rem;
+  width: 100%;
+  border-radius: 20px;
+}
+
+/* ARCH-03: button grows to fill available row space */
+.btn-action-grow {
+  padding: 12px 20px;
+  font-size: 0.95rem;
+  border-radius: 20px;
+  flex: 1;
+}
+
+/* Bulls guess slots card */
+.bulls-slots-card {
+  background: var(--header-bg);
+  border: 1.5px solid var(--header-border);
+  border-radius: 20px;
+  padding: 14px;
+  margin-bottom: 12px;
+  box-shadow: var(--card-shadow);
+  text-align: center;
 }
 
 .btn-danger {

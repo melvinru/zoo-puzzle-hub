@@ -54,7 +54,10 @@ const Portal = {
       localStorage.setItem('zoo_bulls_code_size', this.bullsSize);
       localStorage.setItem('zoo_crossword_board_size', this.crosswordSize);
       localStorage.setItem('zoo_pyramid_board_size', this.pyramidSize);
-    } catch (e) {}
+    } catch (e) {
+      // BUG-04: log instead of silently swallowing
+      console.warn('Could not save portal settings:', e);
+    }
   },
   
   switchGame(gameName) {
@@ -71,240 +74,136 @@ const Portal = {
     this.syncActiveGameStates();
   },
   
+  // DUP-06: data-driven config replaces 200-line if-else chain
+  // Each game entry declares what to show/hide when it's active.
+  _getGameConfig() {
+    return {
+      '2048': {
+        containerId: 'game-2048-container',
+        tabId: 'tab-2048',
+        scoreId: 'portal-scores',
+        restartBtnId: 'btn-restart-2048',
+        gridBtnIds: ['btn-grid-3', 'btn-grid-4'],
+        showTypeGroup: false,
+        title: 'Zoo 2048 🐾',
+        subtitle: (mode) => mode === 'animals' ? 'Собери Единорога! 🦄' : 'Веселая математика! 🔢',
+        onActivate: null
+      },
+      '15ths': {
+        containerId: 'game-15ths-container',
+        tabId: 'tab-15ths',
+        scoreId: null,
+        restartBtnId: 'fifteen-random-btn',
+        gridBtnIds: [],
+        showGridGroup: false,
+        showTypeGroup: true,
+        title: 'Zoo Пятнашки 🧩',
+        subtitle: () => 'Собери картинку по порядку!',
+        onActivate: () => window.AppFifteen?.updateUI()
+      },
+      'sudoku': {
+        containerId: 'game-sudoku-container',
+        tabId: 'tab-sudoku',
+        scoreId: 'sudoku-scores',
+        restartBtnId: 'sudoku-restart-btn',
+        gridBtnIds: ['btn-grid-s4', 'btn-grid-s6', 'btn-grid-s9'],
+        showTypeGroup: false,
+        title: 'Zoo Судоку 🔢',
+        subtitle: (mode) => mode === 'animals' ? 'Собери всех зверят в сетке!' : 'Заполни сетку цифрами!',
+        onActivate: () => window.AppSudoku?.updateUI()
+      },
+      'bulls': {
+        containerId: 'game-bulls-container',
+        tabId: 'tab-bulls',
+        scoreId: 'bulls-scores',
+        restartBtnId: 'bulls-restart-btn',
+        gridBtnIds: ['btn-grid-b3', 'btn-grid-b4', 'btn-grid-b5'],
+        showTypeGroup: false,
+        title: 'Zoo Быки и Коровы 🐮',
+        subtitle: (mode) => mode === 'animals' ? 'Разгадай секретный шифр из животных!' : 'Разгадай секретный шифр из цифр!',
+        onActivate: () => window.AppBulls?.updateUI()
+      },
+      'crossword': {
+        containerId: 'game-crossword-container',
+        tabId: 'tab-crossword',
+        scoreId: 'crossword-scores',
+        restartBtnId: 'crossword-restart-btn',
+        gridBtnIds: ['btn-grid-c5', 'btn-grid-c7'],
+        showTypeGroup: false,
+        title: 'Zoo Кроссворд 🧠',
+        subtitle: (mode) => mode === 'animals' ? 'Реши математический кроссворд из животных!' : 'Реши математический кроссворд!',
+        onActivate: () => window.AppCrossword?.updateUI()
+      },
+      'pyramid': {
+        containerId: 'game-pyramid-container',
+        tabId: 'tab-pyramid',
+        scoreId: 'pyramid-scores',
+        restartBtnId: 'pyramid-restart-btn',
+        gridBtnIds: ['btn-grid-p3', 'btn-grid-p4', 'btn-grid-p5', 'btn-grid-p6'],
+        showTypeGroup: false,
+        title: 'Zoo Пирамида 🔺',
+        subtitle: (mode) => mode === 'animals' ? 'Сложи плитки с животными, чтобы построить пирамиду!' : 'Сложи числа, чтобы построить пирамиду!',
+        onActivate: () => window.AppPyramid?.updateUI()
+      }
+    };
+  },
+
   applyGameVisibility() {
-    const container2048 = document.getElementById('game-2048-container');
-    const container15ths = document.getElementById('game-15ths-container');
-    const containerSudoku = document.getElementById('game-sudoku-container');
-    const containerBulls = document.getElementById('game-bulls-container');
-    const containerCrossword = document.getElementById('game-crossword-container');
-    const containerPyramid = document.getElementById('game-pyramid-container');
-    const tab2048 = document.getElementById('tab-2048');
-    const tab15ths = document.getElementById('tab-15ths');
-    const tabSudoku = document.getElementById('tab-sudoku');
-    const tabBulls = document.getElementById('tab-bulls');
-    const tabCrossword = document.getElementById('tab-crossword');
-    const tabPyramid = document.getElementById('tab-pyramid');
-    
-    // Shared header elements references
-    const portalTitle = document.getElementById('portal-title');
-    const portalSubtitle = document.getElementById('portal-subtitle');
-    const portalScores = document.getElementById('portal-scores');
-    const sudokuScores = document.getElementById('sudoku-scores');
-    const bullsScores = document.getElementById('bulls-scores');
-    const crosswordScores = document.getElementById('crossword-scores');
-    const pyramidScores = document.getElementById('pyramid-scores');
+    const config = this._getGameConfig();
+    const allScoreIds = ['portal-scores', 'sudoku-scores', 'bulls-scores', 'crossword-scores', 'pyramid-scores'];
+    const allGridBtnIds = [
+      'btn-grid-3', 'btn-grid-4',
+      'btn-grid-s4', 'btn-grid-s6', 'btn-grid-s9',
+      'btn-grid-b3', 'btn-grid-b4', 'btn-grid-b5',
+      'btn-grid-c5', 'btn-grid-c7',
+      'btn-grid-p3', 'btn-grid-p4', 'btn-grid-p5', 'btn-grid-p6'
+    ];
+    const allRestartIds = [
+      'btn-restart-2048', 'fifteen-random-btn', 'sudoku-restart-btn',
+      'bulls-restart-btn', 'crossword-restart-btn', 'pyramid-restart-btn'
+    ];
+    const allContainerIds = Object.values(config).map(c => c.containerId);
+    const allTabIds = Object.values(config).map(c => c.tabId);
+
+    // Hide everything first
+    const hide = (id) => document.getElementById(id)?.classList.add('hidden');
+    const show = (id) => document.getElementById(id)?.classList.remove('hidden');
+    const toggleActive = (id, active) => document.getElementById(id)?.classList.toggle('active', active);
+
+    allContainerIds.forEach(hide);
+    allTabIds.forEach(id => toggleActive(id, false));
+    allGridBtnIds.forEach(hide);
+    allRestartIds.forEach(hide);
+    allScoreIds.forEach(hide);
+
+    // Show active game elements
+    const active = config[this.activeGame];
+    if (!active) return;
+
+    show(active.containerId);
+    toggleActive(active.tabId, true);
+    active.gridBtnIds.forEach(show);
+    if (active.restartBtnId) show(active.restartBtnId);
+    if (active.scoreId) show(active.scoreId);
+
+    // Settings bar: grid group & type group
     const settingsGridGroup = document.getElementById('settings-grid-group');
     const settingsTypeGroup = document.getElementById('settings-type-group');
-    
-    const btnRestart2048 = document.getElementById('btn-restart-2048');
-    const btnRandom15 = document.getElementById('fifteen-random-btn');
-    const btnRestartSudoku = document.getElementById('sudoku-restart-btn');
-    const btnRestartBulls = document.getElementById('bulls-restart-btn');
-    const btnRestartCrossword = document.getElementById('crossword-restart-btn');
-    const btnRestartPyramid = document.getElementById('pyramid-restart-btn');
-    
-    const btnGrid3 = document.getElementById('btn-grid-3');
-    const btnGrid4 = document.getElementById('btn-grid-4');
-    const btnGridS4 = document.getElementById('btn-grid-s4');
-    const btnGridS6 = document.getElementById('btn-grid-s6');
-    const btnGridS9 = document.getElementById('btn-grid-s9');
-    const btnGridB3 = document.getElementById('btn-grid-b3');
-    const btnGridB4 = document.getElementById('btn-grid-b4');
-    const btnGridB5 = document.getElementById('btn-grid-b5');
-    const btnGridC5 = document.getElementById('btn-grid-c5');
-    const btnGridC7 = document.getElementById('btn-grid-c7');
-    const btnGridP3 = document.getElementById('btn-grid-p3');
-    const btnGridP4 = document.getElementById('btn-grid-p4');
-    const btnGridP5 = document.getElementById('btn-grid-p5');
-    const btnGridP6 = document.getElementById('btn-grid-p6');
-
-    // Hide all containers
-    if (container2048) container2048.classList.add('hidden');
-    if (container15ths) container15ths.classList.add('hidden');
-    if (containerSudoku) containerSudoku.classList.add('hidden');
-    if (containerBulls) containerBulls.classList.add('hidden');
-    if (containerCrossword) containerCrossword.classList.add('hidden');
-    if (containerPyramid) containerPyramid.classList.add('hidden');
-    
-    // Reset tabs
-    if (tab2048) tab2048.classList.remove('active');
-    if (tab15ths) tab15ths.classList.remove('active');
-    if (tabSudoku) tabSudoku.classList.remove('active');
-    if (tabBulls) tabBulls.classList.remove('active');
-    if (tabCrossword) tabCrossword.classList.remove('active');
-    if (tabPyramid) tabPyramid.classList.remove('active');
-
-    // Default: hide all grid selector buttons
-    if (btnGrid3) btnGrid3.classList.add('hidden');
-    if (btnGrid4) btnGrid4.classList.add('hidden');
-    if (btnGridS4) btnGridS4.classList.add('hidden');
-    if (btnGridS6) btnGridS6.classList.add('hidden');
-    if (btnGridS9) btnGridS9.classList.add('hidden');
-    if (btnGridB3) btnGridB3.classList.add('hidden');
-    if (btnGridB4) btnGridB4.classList.add('hidden');
-    if (btnGridB5) btnGridB5.classList.add('hidden');
-    if (btnGridC5) btnGridC5.classList.add('hidden');
-    if (btnGridC7) btnGridC7.classList.add('hidden');
-    if (btnGridP3) btnGridP3.classList.add('hidden');
-    if (btnGridP4) btnGridP4.classList.add('hidden');
-    if (btnGridP5) btnGridP5.classList.add('hidden');
-    if (btnGridP6) btnGridP6.classList.add('hidden');
-
-    // Default: hide all restart/action buttons
-    if (btnRestart2048) btnRestart2048.classList.add('hidden');
-    if (btnRandom15) btnRandom15.classList.add('hidden');
-    if (btnRestartSudoku) btnRestartSudoku.classList.add('hidden');
-    if (btnRestartBulls) btnRestartBulls.classList.add('hidden');
-    if (btnRestartCrossword) btnRestartCrossword.classList.add('hidden');
-    if (btnRestartPyramid) btnRestartPyramid.classList.add('hidden');
-
-    // Default: hide all scoreboard containers
-    if (portalScores) portalScores.classList.add('hidden');
-    if (sudokuScores) sudokuScores.classList.add('hidden');
-    if (bullsScores) bullsScores.classList.add('hidden');
-    if (crosswordScores) crosswordScores.classList.add('hidden');
-    if (pyramidScores) pyramidScores.classList.add('hidden');
-
-    if (this.activeGame === '2048') {
-      if (container2048) container2048.classList.remove('hidden');
-      if (tab2048) tab2048.classList.add('active');
-      
-      // Update header states for 2048
-      if (portalTitle) portalTitle.textContent = 'Zoo 2048 🐾';
-      if (portalSubtitle) {
-        if (this.gameMode === 'animals') {
-          portalSubtitle.textContent = 'Собери Единорога! 🦄';
-        } else {
-          portalSubtitle.textContent = 'Веселая математика! 🔢';
-        }
-      }
-      if (portalScores) portalScores.classList.remove('hidden');
-      if (settingsGridGroup) settingsGridGroup.classList.remove('hidden');
-      if (settingsTypeGroup) settingsTypeGroup.classList.add('hidden');
-      if (btnRestart2048) btnRestart2048.classList.remove('hidden');
-
-      // Show 2048 grid size buttons
-      if (btnGrid3) btnGrid3.classList.remove('hidden');
-      if (btnGrid4) btnGrid4.classList.remove('hidden');
-    } else if (this.activeGame === '15ths') {
-      if (container15ths) container15ths.classList.remove('hidden');
-      if (tab15ths) tab15ths.classList.add('active');
-      
-      // Update header states for 15ths
-      if (portalTitle) portalTitle.textContent = 'Zoo Пятнашки 🧩';
-      if (portalSubtitle) portalSubtitle.textContent = 'Собери картинку по порядку!';
-      if (settingsGridGroup) settingsGridGroup.classList.add('hidden');
-      if (settingsTypeGroup) settingsTypeGroup.classList.remove('hidden');
-      if (btnRandom15) btnRandom15.classList.remove('hidden');
-      
-      if (window.AppFifteen) {
-        window.AppFifteen.updateUI();
-      }
-    } else if (this.activeGame === 'sudoku') {
-      if (containerSudoku) containerSudoku.classList.remove('hidden');
-      if (tabSudoku) tabSudoku.classList.add('active');
-
-      // Update header states for Sudoku
-      if (portalTitle) portalTitle.textContent = 'Zoo Судоку 🔢';
-      if (portalSubtitle) {
-        if (this.gameMode === 'animals') {
-          portalSubtitle.textContent = 'Собери всех зверят в сетке!';
-        } else {
-          portalSubtitle.textContent = 'Заполни сетку цифрами!';
-        }
-      }
-      if (sudokuScores) sudokuScores.classList.remove('hidden');
-      if (settingsGridGroup) settingsGridGroup.classList.remove('hidden');
-      if (settingsTypeGroup) settingsTypeGroup.classList.add('hidden');
-      if (btnRestartSudoku) btnRestartSudoku.classList.remove('hidden');
-
-      // Show Sudoku grid size buttons
-      if (btnGridS4) btnGridS4.classList.remove('hidden');
-      if (btnGridS6) btnGridS6.classList.remove('hidden');
-      if (btnGridS9) btnGridS9.classList.remove('hidden');
-
-      if (window.AppSudoku) {
-        window.AppSudoku.updateUI();
-      }
-    } else if (this.activeGame === 'bulls') {
-      if (containerBulls) containerBulls.classList.remove('hidden');
-      if (tabBulls) tabBulls.classList.add('active');
-
-      // Update header states for Bulls and Cows
-      if (portalTitle) portalTitle.textContent = 'Zoo Быки и Коровы 🐮';
-      if (portalSubtitle) {
-        if (this.gameMode === 'animals') {
-          portalSubtitle.textContent = 'Разгадай секретный шифр из животных!';
-        } else {
-          portalSubtitle.textContent = 'Разгадай секретный шифр из цифр!';
-        }
-      }
-      if (bullsScores) bullsScores.classList.remove('hidden');
-      if (settingsGridGroup) settingsGridGroup.classList.remove('hidden');
-      if (settingsTypeGroup) settingsTypeGroup.classList.add('hidden');
-      if (btnRestartBulls) btnRestartBulls.classList.remove('hidden');
-
-      // Show Bulls grid size buttons
-      if (btnGridB3) btnGridB3.classList.remove('hidden');
-      if (btnGridB4) btnGridB4.classList.remove('hidden');
-      if (btnGridB5) btnGridB5.classList.remove('hidden');
-
-      if (window.AppBulls) {
-        window.AppBulls.updateUI();
-      }
-    } else if (this.activeGame === 'crossword') {
-      if (containerCrossword) containerCrossword.classList.remove('hidden');
-      if (tabCrossword) tabCrossword.classList.add('active');
-
-      // Update header states for Crossword
-      if (portalTitle) portalTitle.textContent = 'Zoo Кроссворд 🧮';
-      if (portalSubtitle) {
-        if (this.gameMode === 'animals') {
-          portalSubtitle.textContent = 'Реши математический кроссворд из животных!';
-        } else {
-          portalSubtitle.textContent = 'Реши математический кроссворд!';
-        }
-      }
-      if (crosswordScores) crosswordScores.classList.remove('hidden');
-      if (settingsGridGroup) settingsGridGroup.classList.remove('hidden');
-      if (settingsTypeGroup) settingsTypeGroup.classList.add('hidden');
-      if (btnRestartCrossword) btnRestartCrossword.classList.remove('hidden');
-
-      // Show Crossword grid size buttons
-      if (btnGridC5) btnGridC5.classList.remove('hidden');
-      if (btnGridC7) btnGridC7.classList.remove('hidden');
-
-      if (window.AppCrossword) {
-        window.AppCrossword.updateUI();
-      }
-    } else if (this.activeGame === 'pyramid') {
-      if (containerPyramid) containerPyramid.classList.remove('hidden');
-      if (tabPyramid) tabPyramid.classList.add('active');
- 
-      // Update header states for Pyramid
-      if (portalTitle) portalTitle.textContent = 'Zoo Пирамида 🔺';
-      if (portalSubtitle) {
-        if (this.gameMode === 'animals') {
-          portalSubtitle.textContent = 'Сложи плитки с животными, чтобы построить пирамиду!';
-        } else {
-          portalSubtitle.textContent = 'Сложи числа, чтобы построить пирамиду!';
-        }
-      }
-      if (pyramidScores) pyramidScores.classList.remove('hidden');
-      if (settingsGridGroup) settingsGridGroup.classList.remove('hidden');
-      if (settingsTypeGroup) settingsTypeGroup.classList.add('hidden');
-      if (btnRestartPyramid) btnRestartPyramid.classList.remove('hidden');
- 
-      // Show Pyramid grid size buttons
-      if (btnGridP3) btnGridP3.classList.remove('hidden');
-      if (btnGridP4) btnGridP4.classList.remove('hidden');
-      if (btnGridP5) btnGridP5.classList.remove('hidden');
-      if (btnGridP6) btnGridP6.classList.remove('hidden');
- 
-      if (window.AppPyramid) {
-        window.AppPyramid.updateUI();
-      }
+    if (settingsGridGroup) {
+      settingsGridGroup.classList.toggle('hidden', active.showGridGroup === false);
     }
+    if (settingsTypeGroup) {
+      settingsTypeGroup.classList.toggle('hidden', !active.showTypeGroup);
+    }
+
+    // Header text
+    const portalTitle = document.getElementById('portal-title');
+    const portalSubtitle = document.getElementById('portal-subtitle');
+    if (portalTitle) portalTitle.textContent = active.title;
+    if (portalSubtitle) portalSubtitle.textContent = active.subtitle(this.gameMode);
+
+    // Activate game module
+    if (active.onActivate) active.onActivate();
   },
   
   updatePortalModeButtonsUI() {
